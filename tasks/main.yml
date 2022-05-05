@@ -1,0 +1,76 @@
+---
+- name: Create ARC config directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: u=rwx,g=rx,o=rx
+  loop:
+    - "{{ arc_config_dir }}"
+    - "{{ arc_manifests_dir }}"
+
+- name: Create ARC namespaces
+  kubernetes.core.k8s:
+    name: arc-{{ _arc_controller_label }}
+    api_version: v1
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ kubernetes_kubeconfig }}"
+  loop: "{{ arc_runners }}"
+  loop_control:
+    label: arc-{{ _arc_controller_label }}
+  vars:
+    ansible_python_interpreter: "{{ kubernetes_venv }}/bin/python3"
+
+- name: Download cert-manager manifest
+  ansible.builtin.get_url:
+    url: https://github.com/cert-manager/cert-manager/releases/download/v{{ arc_cert_manager_version }}/cert-manager.yaml
+    dest: "{{ arc_manifests_dir }}/cert-manager.yaml"
+    owner: root
+    group: root
+    mode: u=rw,g=r,o=r
+
+- name: Install cert-manager on kubernetes
+  kubernetes.core.k8s:
+    src: "{{ arc_manifests_dir }}/cert-manager.yaml"
+    state: present
+    kubeconfig: "{{ kubernetes_kubeconfig }}"
+  vars:
+    ansible_python_interpreter: "{{ kubernetes_venv }}/bin/python3"
+
+- name: Add ARC helm chart repository
+  kubernetes.core.helm_repository:
+    name: actions-runner-controller
+    url: https://actions-runner-controller.github.io/actions-runner-controller
+    state: present
+  vars:
+    ansible_python_interpreter: "{{ kubernetes_venv }}/bin/python3"
+
+- name: Add ARC kubernetes controllers
+  kubernetes.core.helm:
+    name: arc-{{ _arc_controller_label }}
+    chart_ref: actions-runner-controller/actions-runner-controller
+    namespace: actions-runner-system
+    create_namespace: yes
+    values: "{{ lookup('template', 'helm-values.yml') | from_yaml }}"
+    wait: yes
+    state: present
+    kubeconfig: "{{ kubernetes_kubeconfig }}"
+  loop: "{{ arc_runners }}"
+  loop_control:
+    label: arc-{{ _arc_controller_label }}
+  vars:
+    ansible_python_interpreter: "{{ kubernetes_venv }}/bin/python3"
+
+- name: Add github actions runners
+  kubernetes.core.k8s:
+    namespace: arc-{{ _arc_controller_label }}
+    state: present
+    definition: "{{ lookup('template', 'runners-manifest.yml') | from_yaml }}"
+    kubeconfig: "{{ kubernetes_kubeconfig }}"
+  loop: "{{ arc_runners }}"
+  loop_control:
+    label: "{{ _arc_controller_label }}"
+  vars:
+    ansible_python_interpreter: "{{ kubernetes_venv }}/bin/python3"

@@ -1,0 +1,4 @@
+---
+# https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+_arc_controller_label: "{{ item.label | default((item.org + '-' + item.repo \
+  if item.repo is defined else item.org) | lower | regex_replace('_', '-')) }}"

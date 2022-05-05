@@ -1,0 +1,16 @@
+#jinja2: trim_blocks: "false", lstrip_blocks: "true"
+---
+leaderElectionId: "leader-{{ _arc_controller_label }}"
+{% if arc_enterprise_server is defined %}
+githubEnterpriseServerURL: "{{ arc_enterprise_server }}"
+{% endif %}
+authSecret:
+  name: controller-manager-{{ _arc_controller_label }}
+  create: true
+  github_app_id: "{{ arc_app_id }}"
+  github_app_installation_id: "{{ item.app_installation_id }}"
+  github_app_private_key: |
+    {{ arc_app_private_key | indent(4, False) }}
+scope:
+  singleNamespace: true
+  watchNamespace: arc-{{ _arc_controller_label }}

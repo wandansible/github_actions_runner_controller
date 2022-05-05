@@ -1,0 +1,63 @@
+#jinja2: trim_blocks: "false", lstrip_blocks: "true"
+---
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: "{{ inventory_hostname }}"
+spec:
+  replicas: {{ item.replicas | default(1) | int }}
+  template:
+    spec:
+      {% if item.repo is defined %}
+      repository: "{{ item.org }}/{{ item.repo }}"
+      {% else %}
+      organization: "{{ item.org }}"
+      {% endif %}
+      env:
+        - name: DOCKER_HOST
+          value: tcp://localhost:2376
+        - name: DOCKER_TLS_VERIFY
+          value: "1"
+        - name: DOCKER_CERT_PATH
+          value: /certs/client
+      volumes:
+        - emptyDir: {}
+          name: runner
+        - emptyDir: {}
+          name: work
+        - emptyDir: {}
+          name: certs-client
+        - emptyDir: {}
+          name: hostedtoolcache
+      volumeMounts:
+        - mountPath: /runner
+          name: runner
+        - mountPath: /runner/_work
+          name: work
+        - mountPath: /certs/client
+          name: certs-client
+          readOnly: true
+        - mountPath: /opt/hostedtoolcache
+          name: hostedtoolcache
+      ephemeral: true
+      dockerEnabled: false
+      dockerdWithinRunnerContainer: false
+      imagePullPolicy: Always
+      sidecarContainers:
+        - name: rootless-docker
+          image: "{{ arc_rootless_docker_image }}"
+          imagePullPolicy: Always
+          env:
+            - name: DOCKER_TLS_CERTDIR
+              value: /certs
+          volumeMounts:
+            - mountPath: /runner
+              name: runner
+            - mountPath: /runner/_work
+              name: work
+            - mountPath: /certs/client
+              name: certs-client
+            - mountPath: /opt/hostedtoolcache
+              name: hostedtoolcache
+          securityContext:
+            privileged: true

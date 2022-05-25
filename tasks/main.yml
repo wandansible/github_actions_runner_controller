@@ -38,6 +38,52 @@
     kubeconfig: "{{ kubernetes_kubeconfig }}"
   vars:
     ansible_python_interpreter: "{{ kubernetes_venv }}/bin/python3"
+  register: _cert_manager
+
+- name: Wait until cert-manager is initialised before continuing
+  when: _cert_manager.changed
+  block:
+    - name: Create cert-manager test namespace
+      kubernetes.core.k8s:
+        name: cert-manager-test
+        api_version: v1
+        kind: Namespace
+        state: present
+        kubeconfig: "{{ kubernetes_kubeconfig }}"
+      vars:
+        ansible_python_interpreter: "{{ kubernetes_venv }}/bin/python3"
+
+    - name: Create test cert-manager issuer to verify cert-manager is initialised
+      kubernetes.core.k8s:
+        namespace: cert-manager-test
+        definition: "{{ lookup('template', 'test-issuer.yml') | from_yaml }}"
+        state: present
+        kubeconfig: "{{ kubernetes_kubeconfig }}"
+      vars:
+        ansible_python_interpreter: "{{ kubernetes_venv }}/bin/python3"
+      register: _cert_manager_test
+      retries: 10
+      delay: 10
+      until: _cert_manager_test is not failed
+
+    - name: Remove test cert-manager issuer
+      kubernetes.core.k8s:
+        namespace: cert-manager-test
+        definition: "{{ lookup('template', 'test-issuer.yml') | from_yaml }}"
+        state: absent
+        kubeconfig: "{{ kubernetes_kubeconfig }}"
+      vars:
+        ansible_python_interpreter: "{{ kubernetes_venv }}/bin/python3"
+
+    - name: Remove cert-manager test namespace
+      kubernetes.core.k8s:
+        name: cert-manager-test
+        api_version: v1
+        kind: Namespace
+        state: absent
+        kubeconfig: "{{ kubernetes_kubeconfig }}"
+      vars:
+        ansible_python_interpreter: "{{ kubernetes_venv }}/bin/python3"
 
 - name: Add ARC helm chart repository
   kubernetes.core.helm_repository:

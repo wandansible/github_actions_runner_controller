@@ -40,7 +40,7 @@
     ansible_python_interpreter: "{{ kubernetes_venv }}/bin/python3"
   register: _cert_manager
 
-- name: Wait until cert-manager is initialised before continuing
+- name: Wait until cert-manager is initialised before continuing  # noqa no-handler
   when: _cert_manager.changed
   block:
     - name: Create cert-manager test namespace

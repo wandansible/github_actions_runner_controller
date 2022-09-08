@@ -3,21 +3,6 @@ arc_config_dir: /etc/github-actions-runner-controller
 arc_manifests_dir: "{{ arc_config_dir }}/manifests"
 arc_cert_manager_version: 1.8.0
 
-# List of dicts with runners to deploy.
-# The dicts must have the following structure:
-# {
-#   org: <organisation>        # Name of GitHub organisation (required)
-#   repo: <repository>         # Name of GitHub project (optional)
-#   app_installation_id: <id>  # ID of the GitHub app installation (required)
-#   replicas: <integer>        # Number of runners to deploy (optional)
-# }
 arc_runners: []
 
 arc_rootless_docker_image: docker:dind-rootless
-
-# Required variables:
-# arc_app_id: <github app id>             # ID of the GitHub app
-# arc_app_private_key: <private ssh key>  # Private SSH key generated for the GitHub app
-#
-# Optional variables:
-# arc_enterprise_server: <url>            # URL for a GitHub enterprise server

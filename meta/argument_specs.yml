@@ -1,0 +1,63 @@
+---
+argument_specs:
+  main:
+    short_description: Deploy GitHub actions runner controllers
+    description: |
+      Deploy GitHub actions runner controllers on a kubernetes cluster.
+      This can be used for deploying ephemeral self-hosted actions runners
+      across multiple repositories or organisations.
+    options:
+      arc_config_dir:
+        description: Directory containing configuration for ARC
+        type: str
+        default: /etc/github-actions-runner-controller
+
+      arc_manifests_dir:
+        description: Directory containing kubernetes manifests for ARC
+        type: str
+        default: /etc/github-actions-runner-controller/manifests
+
+      arc_cert_manager_version:
+        description: Version of cert-manager to install
+        type: str
+        default: 1.8.0
+
+      arc_runners:
+        description: List of runners to deploy
+        type: list
+        elements: dict
+        options:
+          org:
+            description: Name of GitHub organisation
+            type: str
+            required: true
+          repo:
+            description: Name of GitHub repository
+            type: str
+          app_installation_id:
+            description: ID of the GitHub app installation
+            type: int
+            required: true
+          replicas:
+            description: Number of runners to deploy
+            type: int
+            default: 1
+
+      arc_rootless_docker_image:
+        description: The rootless docker image used for the sidecar container
+        type: str
+        default: docker:dind-rootless
+
+      arc_app_id:
+        description: ID of the GitHub app
+        type: int
+        required: true
+
+      arc_app_private_key:
+        description: Private SSH key generated for the GitHub app
+        type: str
+        required: true
+
+      arc_enterprise_server:
+        description: URL for a GitHub enterprise server
+        type: str
